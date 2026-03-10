@@ -1,7 +1,15 @@
 # 🖥️ J2 MULTI-DASH 
 ### A Minimalist Smart Desk Display for Spotify & Weather
 
+![J2 Multi-Dash Hero](images/hero.png)
+
 This project transforms an old Samsung Galaxy J2 into a high-end, three-panel desk dashboard. It features a custom Flask backend, real-time Spotify synchronization (with lyrics!), a live weather API, and a reactive "Pixel Pet."
+
+## 🎨 Design Concept
+The "J2 Multi-Dash" uses an Industrial Grey housing with Copper accents to hide the legacy phone hardware.
+
+![Design Angles](images/angles.png)
+![Design Angles](images/side.png)
 
 ## ✨ Features
 - **Triple-Panel Interface:** Divided layout for Pet, Weather/Lyrics, and Music.
