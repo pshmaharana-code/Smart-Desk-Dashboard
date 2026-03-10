@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Desk Dashboard V5.1 (Divided Sleep Mode)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #000; color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        /* --- THE DIVIDED SLEEP MODE OVERLAY --- */
+        #offline-screen {
+            display: none; /* JavaScript will change this to 'grid' when offline */
+            position: fixed; top: 0; left: 0; 
+            width: 100vw; height: 100vh; 
+            background: #000; 
+            z-index: 9999; 
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .sleep-panel {
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            height: 100%;
+        }
+
+        .panel {
+            border-right: 2px solid #333; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; position: relative; min-width: 0;
+        }
+        .panel:last-child { border-right: none; }
+
+        /* Left Panel */
+        .left-panel { overflow: hidden; background-color: #000; }
+        .left-panel img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+        
+        /* Middle Panel (Weather & Lyrics) */
+        .middle-panel {
+            padding: 10px; text-align: center; background-color: #111; 
+            background-size: cover; background-position: center; font-family: 'Roboto', sans-serif;
+            transition: background-image 1s ease-in-out; 
+            position: relative;
+        }
+        
+        #fallback-view { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; width: 100%; height: 100%; transition: opacity 0.5s; }
+        #clock { font-size: 1.5rem; color: #fff; font-weight: 500; letter-spacing: 1px; }
+        #weather-container { display: flex; flex-direction: column; align-items: center; }
+        #temp-wrapper { position: relative; display: inline-block; margin-bottom: 5px; }
+        #temp-value { font-size: 6.5rem; font-weight: 700; color: #fff; line-height: 1; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        #temp-unit { font-size: 2rem; font-weight: 500; position: absolute; top: 10px; right: -30px; color: #fff; }
+        #condition { font-size: 1.4rem; color: #fff; font-weight: 500; margin-bottom: 8px; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); }
+        #extra-weather { font-size: 1.1rem; color: #fff; opacity: 0.9; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); }
+
+        /* GPU Lyrics View */
+        #lyrics-view {
+            display: none; 
+            width: 100%; height: 100%;
+            overflow: hidden; 
+            position: absolute; top: 0; left: 0;
+            z-index: 5;
+        }
+
+        #lyrics-track {
+            position: absolute;
+            width: 100%;
+            top: 50%; 
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            will-change: transform;
+            padding: 0 20px;
+        }
+
+        .lyric-line {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.3); 
+            margin: 18px 0; 
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center;
+            text-align: center;
+        }
+
+        .lyric-line.active {
+            font-size: 1.7rem; 
+            color: #fff; 
+            text-shadow: 0px 4px 15px rgba(0,0,0,0.9);
+            transform: scale(1.1); 
+        }
+
+        /* Right Panel (Spotify) */
+        .right-panel { background-color: #121212; font-family: 'Roboto', sans-serif; overflow: hidden; position: relative; }
+        #spotify-bg {
+            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
+            background-size: cover; background-position: center;
+            -webkit-filter: blur(25px) brightness(0.4); filter: blur(25px) brightness(0.4);
+            z-index: 1; transition: background-image 1s ease;
+        }
+        #spotify-empty { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; }
+        #spotify-empty svg { width: 70px; height: 70px; fill: #1db954; margin-bottom: 15px; }
+        #spotify-empty-text { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        #spotify-active { display: none; width: 100%; height: 100%; position: relative; z-index: 2; flex-direction: column; justify-content: space-evenly; padding: 12px; }
+        #album-cover { width: 75%; margin: 0 auto; aspect-ratio: 1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); object-fit: cover; }
+        #song-info { width: 100%; text-align: left; }
+        #song-title { font-size: 1.3rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #song-artist { font-size: 1rem; color: #b3b3b3; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #progress-area { width: 100%; }
+        #progress-container { width: 100%; height: 4px; background-color: rgba(255, 255, 255, 0.2); border-radius: 2px; margin-bottom: 6px; position: relative; }
+        #progress-bar { height: 100%; width: 0%; background-color: #fff; border-radius: 2px; position: relative; }
+        #progress-dot { width: 10px; height: 10px; background-color: #fff; border-radius: 50%; position: absolute; right: -5px; top: -3px; }
+        #time-info { display: flex; justify-content: space-between; font-size: 0.75rem; color: #b3b3b3; font-weight: 500; }
+        #controls-area { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 8px; }
+        .icon-btn { fill: #fff; opacity: 0.9; width: 16px; height: 16px; } 
+        .icon-btn.secondary { fill: #1db954; width: 14px; height: 14px; } 
+        #play-pause-btn { width: 38px; height: 38px; background-color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        #play-pause-btn svg { fill: #000; width: 16px; height: 16px; } 
+    </style>
+</head>
+<body>
+
+    <div id="offline-screen">
+        <div class="sleep-panel" style="border-right: 1px solid #1a1a1a;">
+            <div style="font-size: 2.5rem; color: #555;">Z<span style="font-size:1.5rem">z</span></div>
+        </div>
+        <div class="sleep-panel" style="border-right: 1px solid #1a1a1a; text-align: center;">
+            <div style="font-size: 3.5rem; margin-bottom: 10px; color: #FFD700;">🌙</div> <h2 style="font-family: 'Roboto', sans-serif; font-weight: 400; font-size: 1.1rem; color: #FFF; line-height: 1.3;">SYSTEM<br>SLEEPING</h2>
+        </div>
+        <div class="sleep-panel">
+            <div style="font-size: 0.9rem; font-family: 'Courier New', monospace; color: #888; letter-spacing: 3px; border: 1px solid #333; padding: 5px 10px; border-radius: 4px;">OFFLINE</div>
+        </div>
+    </div>
+
+    <div class="panel left-panel"><img src="pet.gif" alt="Pixel Pet"></div>
+
+    <div class="panel middle-panel" id="dynamic-bg">
+        <div id="fallback-view">
+            <div id="clock">12:00:00</div>
+            <div id="weather-container">
+                <div id="temp-wrapper">
+                    <span id="temp-value">--</span><span id="temp-unit">&deg;C</span>
+                </div>
+                <div id="condition">Loading weather...</div>
+                <div id="extra-weather">-- ~ --&deg;C &nbsp;Feels like --&deg;C</div>
+            </div>
+        </div>
+        
+        <div id="lyrics-view">
+            <div id="lyrics-track"></div>
+        </div>
+    </div>
+
+    <div class="panel right-panel">
+        <div id="spotify-empty">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.84.24 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+            <div id="spotify-empty-text">No music playing</div>
+        </div>
+        <div id="spotify-bg"></div>
+        <div id="spotify-active">
+            <img id="album-cover" src="" alt="Album Art">
+            <div id="song-info"><div id="song-title">Song Title</div><div id="song-artist">Artist Name</div></div>
+            <div id="progress-area"><div id="progress-container"><div id="progress-bar"><div id="progress-dot"></div></div></div><div id="time-info"><span id="current-time">0:00</span><span id="total-time">0:00</span></div></div>
+            <div id="controls-area">
+                <svg class="icon-btn secondary" viewBox="0 0 16 16"><path d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 0 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 4.75 13.151.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5zM8.75 10.723l.98-1.167 1.795 2.14A2.25 2.25 0 0 0 13.25 12.5h1.947l-1.017-1.018a.75.75 0 1 0 1.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 1 0-1.06-1.06L15.19 14h-1.947a3.75 3.75 0 0 1-2.873-1.34l-1.62-1.937z" fill="currentColor"/></svg>
+                <svg class="icon-btn" viewBox="0 0 16 16"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" fill="currentColor"/></svg>
+                <div id="play-pause-btn"><svg viewBox="0 0 16 16"><path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z" fill="black"/></svg></div>
+                <svg class="icon-btn" viewBox="0 0 16 16"><path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z" fill="currentColor"/></svg>
+                <svg class="icon-btn secondary" viewBox="0 0 16 16"><path d="M0 4.75A3.75 3.75 0 0 1 3.75 1h8.5A3.75 3.75 0 0 1 16 4.75v5a3.75 3.75 0 0 1-3.75 3.75H9.81l1.018 1.018a.75.75 0 1 1-1.06 1.06L6.939 12.75l2.829-2.828a.75.75 0 1 1 1.06 1.06L9.811 12h2.439a2.25 2.25 0 0 0 2.25-2.25v-5a2.25 2.25 0 0 0-2.25-2.25h-8.5A2.25 2.25 0 0 0 1.5 4.75v5A2.25 2.25 0 0 0 3.75 12H5v1.5H3.75A3.75 3.75 0 0 1 0 9.75v-5z" fill="currentColor"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let syncedProgressMs = 0;
+        let lastSyncTimestamp = 0;
+        let localDurationMs = 0;
+        let isPlayingLocal = false;
+        let isOffline = false; 
+        
+        let currentTrackName = "";
+        let weatherBgImage = "clear.jpg"; 
+        let currentLyrics = []; 
+        let currentLyricIndex = -1; 
+
+        // --- CLOCK & WEATHER ---
+        function updateClock() { const now = new Date(); let h = now.getHours(); let m = now.getMinutes(); let s = now.getSeconds(); document.getElementById('clock').innerText = `${h<10?'0'+h:h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`; }
+        updateClock(); setInterval(updateClock, 1000);
+
+        async function fetchWeather() {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=19.3150&longitude=84.7941&current=temperature_2m,apparent_temperature,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto`); const data = await res.json();
+                let isDay = data.current.is_day; 
+                weatherBgImage = isDay ? "clear.jpg" : "night.jpg"; 
+                let code = data.current.weather_code;
+                let c = "Clear"; let i = isDay ? "☀️" : "🌙"; 
+                if (code >= 1 && code <= 3) { c = "Intermittent clouds"; i = isDay ? "⛅" : "☁️"; weatherBgImage = isDay ? "intermittent.jpg" : "night.jpg"; }
+                else if(code>=45&&code<=48){c="Fog";i="🌫️";weatherBgImage="fog.jpg";}
+                else if(code>=51&&code<=67){c="Rain";i="🌧️";weatherBgImage="rain.jpg";}
+                else if(code>=71&&code<=77){c="Snow";i="❄️";weatherBgImage="snow.jpg";}
+                else if(code>=95){c="Thunderstorm";i="⛈️";weatherBgImage="storm.jpg";}
+                document.getElementById('temp-value').innerText = Math.round(data.current.temperature_2m); document.getElementById('condition').innerText = `${i} ${c}`;
+                document.getElementById('extra-weather').innerHTML = `${Math.round(data.daily.temperature_2m_min[0])} ~ ${Math.round(data.daily.temperature_2m_max[0])}&deg;C &nbsp;&nbsp;Feels like ${Math.round(data.current.apparent_temperature)}&deg;C`;
+                if (!isPlayingLocal || currentLyrics.length === 0) { document.getElementById('dynamic-bg').style.backgroundImage = `url('${weatherBgImage}')`; }
+            } catch(e) {}
+        }
+        fetchWeather(); setInterval(fetchWeather, 900000); 
+
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000); const minutes = Math.floor(totalSeconds / 60); const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        // --- LYRICS ---
+        async function fetchLyrics(track, artist) {
+            try {
+                const url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}`;
+                const res = await fetch(url);
+                if (res.ok) { const data = await res.json(); if (data.syncedLyrics) return parseLRC(data.syncedLyrics); }
+            } catch(e) {}
+            return null; 
+        }
+        function parseLRC(lrcText) {
+            const lines = lrcText.split('\n'); const lyrics = []; const regex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+            for (let line of lines) { const match = regex.exec(line); if (match) { const m = parseInt(match[1], 10); const s = parseInt(match[2], 10); const ms = parseInt(match[3].padEnd(3, '0'), 10); lyrics.push({ time: (m * 60000) + (s * 1000) + ms, text: match[4].trim() || "♪" }); } }
+            return lyrics;
+        }
+        function buildLyricsUI(lyricsArray) {
+            const track = document.getElementById('lyrics-track'); track.innerHTML = ""; track.style.transform = `translateY(0px)`;
+            lyricsArray.forEach((line, index) => { const div = document.createElement('div'); div.className = 'lyric-line'; div.id = `lyric-${index}`; div.innerText = line.text; track.appendChild(div); });
+            currentLyricIndex = -1; 
+        }
+
+        // --- ANIMATION LOOP ---
+        setInterval(() => {
+            if (isPlayingLocal && localDurationMs > 0) {
+                let localProgressMs = syncedProgressMs + (Date.now() - lastSyncTimestamp);
+                if (localProgressMs > localDurationMs) localProgressMs = localDurationMs; 
+                document.getElementById('current-time').innerText = formatTime(localProgressMs);
+                document.getElementById('progress-bar').style.width = `${(localProgressMs / localDurationMs) * 100}%`;
+                if (currentLyrics.length > 0) {
+                    let activeIndex = -1;
+                    for (let i = 0; i < currentLyrics.length; i++) { if (localProgressMs >= currentLyrics[i].time) { activeIndex = i; } else { break; } }
+                    if (activeIndex !== -1 && activeIndex !== currentLyricIndex) {
+                        currentLyricIndex = activeIndex; 
+                        document.querySelectorAll('.lyric-line').forEach(el => el.classList.remove('active'));
+                        const activeEl = document.getElementById(`lyric-${activeIndex}`);
+                        if (activeEl) { activeEl.classList.add('active'); const offset = -(activeEl.offsetTop + (activeEl.clientHeight / 2)); document.getElementById('lyrics-track').style.transform = `translateY(${offset}px)`; }
+                    }
+                }
+            }
+        }, 50); 
+
+        // --- SPOTIFY SYNC + HEARTBEAT ---
+        async function fetchSpotify() {
+            try {
+                const response = await fetch('/now_playing');
+                if (isOffline) { location.reload(); return; }
+                const data = await response.json();
+                const activeUI = document.getElementById('spotify-active');
+                const emptyUI = document.getElementById('spotify-empty');
+                const spotifyBg = document.getElementById('spotify-bg');
+                const middleBg = document.getElementById('dynamic-bg');
+                const fallbackView = document.getElementById('fallback-view');
+                const lyricsView = document.getElementById('lyrics-view');
+
+                if (data.is_playing) {
+                    if (currentTrackName !== data.song) {
+                        currentTrackName = data.song;
+                        document.getElementById('album-cover').src = data.album_art;
+                        spotifyBg.style.backgroundImage = `url('${data.album_art}')`; 
+                        document.getElementById('song-title').innerText = data.song;
+                        document.getElementById('song-artist').innerText = data.artist;
+                        currentLyrics = []; 
+                        const newLyrics = await fetchLyrics(data.song, data.artist);
+                        if (newLyrics && newLyrics.length > 0) {
+                            currentLyrics = newLyrics; buildLyricsUI(currentLyrics); fallbackView.style.display = 'none'; lyricsView.style.display = 'flex';
+                            middleBg.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('${data.album_art}')`;
+                        } else { fallbackView.style.display = 'flex'; lyricsView.style.display = 'none'; middleBg.style.backgroundImage = `url('${weatherBgImage}')`; }
+                    }
+                    syncedProgressMs = data.progress_ms; localDurationMs = data.duration_ms; lastSyncTimestamp = Date.now(); isPlayingLocal = true;
+                    document.getElementById('total-time').innerText = formatTime(localDurationMs);
+                    activeUI.style.display = 'flex'; emptyUI.style.display = 'none'; spotifyBg.style.display = 'block';
+                } else {
+                    isPlayingLocal = false; currentTrackName = ""; currentLyricIndex = -1;
+                    activeUI.style.display = 'none'; emptyUI.style.display = 'flex'; spotifyBg.style.display = 'none';
+                    fallbackView.style.display = 'flex'; lyricsView.style.display = 'none'; middleBg.style.backgroundImage = `url('${weatherBgImage}')`;
+                }
+            } catch (error) {
+                isOffline = true;
+                document.getElementById('offline-screen').style.display = 'grid'; // MUST BE GRID
+            }
+        }
+        
+        fetchSpotify(); 
+        setInterval(fetchSpotify, 3500); 
+    </script>
+</body>
+</html>
