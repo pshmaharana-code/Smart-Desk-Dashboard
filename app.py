@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+load_dotenv() # This loads the variables from .env
 from flask import Flask, request, redirect, jsonify
 from flask_cors import CORS
 import spotipy
@@ -8,11 +11,12 @@ app = Flask(__name__, static_url_path='', static_folder='.')
 CORS(app)
 
 # --- YOUR SPOTIFY KEYS ---
-CLIENT_ID = "85c3eb8278a64d5583dcc8d2635ead36"
-CLIENT_SECRET = "27ca368de5654414aa1608e364236c72"
+CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
+CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
+
 
 # Notice this uses 127.0.0.1 to perfectly match what you saved in the dashboard!
-REDIRECT_URI = "http://127.0.0.1:8888/callback"
+REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI')
 SCOPE = "user-read-currently-playing"
 
 sp_oauth = SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, redirect_uri=REDIRECT_URI, scope=SCOPE)
