@@ -259,8 +259,17 @@
         // --- SPOTIFY SYNC + HEARTBEAT ---
         async function fetchSpotify() {
             try {
-                const response = await fetch('/now_playing');
-                if (isOffline) { location.reload(); return; }
+                // THE CACHE BUSTER: '?t=' + timestamp forces the J2 to check the network fresh every time!
+                const response = await fetch('/now_playing?t=' + new Date().getTime());
+                
+                if (!response.ok) throw new Error("Server not ready");
+
+                // WAKE UP SMOOTHLY
+                if (isOffline) { 
+                    isOffline = false; 
+                    document.getElementById('offline-screen').style.display = 'none'; 
+                }
+                
                 const data = await response.json();
                 const activeUI = document.getElementById('spotify-active');
                 const emptyUI = document.getElementById('spotify-empty');
@@ -292,8 +301,9 @@
                     fallbackView.style.display = 'flex'; lyricsView.style.display = 'none'; middleBg.style.backgroundImage = `url('${weatherBgImage}')`;
                 }
             } catch (error) {
+                // SERVER IS OFFLINE
                 isOffline = true;
-                document.getElementById('offline-screen').style.display = 'grid'; // MUST BE GRID
+                document.getElementById('offline-screen').style.display = 'grid'; 
             }
         }
         
