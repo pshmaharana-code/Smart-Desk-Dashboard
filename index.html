@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Desk Dashboard V5.1 (Divided Sleep Mode)</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,17 +39,29 @@
         }
         .panel:last-child { border-right: none; }
 
-        /* Left Panel */
-        .left-panel { overflow: hidden; background-color: #000; }
-        .left-panel img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+        /* --- DYNAMIC APP CONTAINERS --- */
+        .app-module { 
+            width: 100%; height: 100%; 
+            display: flex; flex-direction: column; position: relative; 
+        }
+
+        /* App 1: Pet */
+        .app-pet { background-color: #000; overflow: hidden; }
+        .app-pet img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
         
-        /* Middle Panel (Weather & Lyrics) */
-        .middle-panel {
+        /* App 2: Weather */
+        .app-weather {
             padding: 10px; text-align: center; background-color: #111; 
             background-size: cover; background-position: center; font-family: 'Roboto', sans-serif;
             transition: background-image 1s ease-in-out; 
-            position: relative;
         }
+        
+        /* App 3: Spotify */
+        .app-spotify { 
+            background-color: #121212; font-family: 'Roboto', sans-serif; overflow: hidden; 
+        }
+        
+        
         
         #fallback-view { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; width: 100%; height: 100%; transition: opacity 0.5s; }
         #clock { font-size: 1.5rem; color: #fff; font-weight: 500; letter-spacing: 1px; }
@@ -95,14 +107,6 @@
             transform: scale(1.1); 
         }
 
-        /* Right Panel (Spotify) */
-        .right-panel { background-color: #121212; font-family: 'Roboto', sans-serif; overflow: hidden; position: relative; }
-        #spotify-bg {
-            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
-            background-size: cover; background-position: center;
-            -webkit-filter: blur(25px) brightness(0.4); filter: blur(25px) brightness(0.4);
-            z-index: 1; transition: background-image 1s ease;
-        }
         #spotify-empty { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; }
         #spotify-empty svg { width: 70px; height: 70px; fill: #1db954; margin-bottom: 15px; }
         #spotify-empty-text { font-size: 1.2rem; font-weight: bold; color: #fff; }
@@ -121,6 +125,162 @@
         .icon-btn.secondary { fill: #1db954; width: 14px; height: 14px; } 
         #play-pause-btn { width: 38px; height: 38px; background-color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         #play-pause-btn svg { fill: #000; width: 16px; height: 16px; } 
+
+        /* App 4: Quotes */
+        .app-quotes {
+            background-color: #000;
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px; text-align: center;
+            height: 100%; width: 100%;
+            overflow: hidden; 
+            box-sizing: border-box;
+        }
+        
+        #quote-text {
+            /* === INTER FONT FOR MAX VISIBILITY === */
+            font-family: 'Inter', sans-serif;
+            font-weight: 800; 
+            color: #fff; 
+            line-height: 1.3;
+            font-size: clamp(1.2rem, 2.5vw, 2.2rem); 
+            
+            opacity: 0; 
+            transition: opacity 2s ease-in-out; 
+            text-shadow: 0px 5px 25px rgba(255,255,255,0.4);
+            
+            /* Required so the red quote mark attaches to the text correctly */
+            position: relative;
+        }
+        
+        /* The red "Suits" style quote mark */
+        #quote-text::before {
+            content: "\201C";
+            color: #d11124; /* Deep cinematic red */
+            font-size: 1.5em;
+            position: absolute;
+            left: -20px;
+            top: -15px;
+            font-style: normal;
+        }
+
+        /* App 5: Live News */
+        .app-news {
+            background-color: #050505; 
+            padding: 25px 20px;
+            display: flex; flex-direction: column; 
+            height: 100%; width: 100%; box-sizing: border-box;
+            border-top: 4px solid #d11124; 
+            
+            /* FIX 1: Prevent Grid Blowout */
+            overflow: hidden; 
+            
+            /* NEW: Dynamic Background Setup */
+            background-size: cover;
+            background-position: center;
+            transition: background-image 1s ease-in-out;
+            position: relative;
+        }
+
+        /* NEW: Dark overlay so white text is always readable over ANY image */
+        .app-news::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.95));
+            z-index: 1;
+        }
+        
+        .news-header {
+            color: #d11124; font-family: 'Inter', sans-serif;
+            font-size: 0.9rem; font-weight: 800; letter-spacing: 2px; 
+            margin-bottom: 15px; text-transform: uppercase;
+            position: relative; z-index: 2; /* Keeps text above the dark overlay */
+        }
+        
+        #news-content {
+            font-family: 'Inter', sans-serif; 
+            /* FIX 1: Auto-shrinking font for long titles */
+            font-size: clamp(1.1rem, 2vw, 1.4rem); 
+            font-weight: 600;
+            color: #fff; line-height: 1.4; flex-grow: 1;
+            display: flex; align-items: center; text-align: left;
+            position: relative; z-index: 2; /* Keeps text above the dark overlay */
+            
+            opacity: 0; 
+            transform: translateY(15px);
+            transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        #news-source {
+            font-size: 0.85rem; color: #aaa; margin-top: 12px; font-weight: 400; text-transform: uppercase; letter-spacing: 1px;
+            display: block;
+        }
+
+        /* --- LIVE NOTIFICATION OVERLAY --- */
+        #notification-toast {
+            position: fixed;
+            top: -150px; 
+            left: 50%;
+            transform: translateX(-50%);
+            
+            /* Compact sizing */
+            width: auto; 
+            min-width: 250px;
+            max-width: 85%;
+            
+            /* Premium Creamy White */
+            background: #FAF9F6; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Softer shadow for a light UI */
+            
+            /* Sharp, professional structure with a subtle boundary */
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.08); 
+            border-left: 4px solid #1db954; /* Clean Spotify-green accent */
+            padding: 12px 16px; 
+            
+            z-index: 10000; 
+            font-family: 'Inter', sans-serif;
+            transition: top 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        #notification-toast.show {
+            top: 15px; 
+        }
+
+        /* Tiny, subtle dark grey app name */
+        #notif-app { 
+            font-size: 0.65rem; 
+            color: #666666; 
+            font-weight: 700; 
+            letter-spacing: 1px; 
+            text-transform: uppercase; 
+            margin-bottom: 2px; 
+        }
+        
+        /* Bold, high-contrast almost-black sender name */
+        #notif-title { 
+            font-size: 0.95rem; 
+            color: #111111; 
+            font-weight: 800; 
+            margin-bottom: 2px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        
+        /* Clean, professional dark-grey message preview */
+        #notif-body { 
+            font-size: 0.85rem; 
+            color: #444444; 
+            font-weight: 500; 
+            line-height: 1.3; 
+            display: -webkit-box; 
+            -webkit-line-clamp: 2; 
+            line-clamp: 2; 
+            -webkit-box-orient: vertical; 
+            overflow: hidden; 
+        }
+
     </style>
 </head>
 <body>
@@ -136,47 +296,135 @@
             <div style="font-size: 0.9rem; font-family: 'Courier New', monospace; color: #888; letter-spacing: 3px; border: 1px solid #333; padding: 5px 10px; border-radius: 4px;">OFFLINE</div>
         </div>
     </div>
+    <div id="notification-toast">
+        <div id="notif-app">APP NAME</div>
+        <div id="notif-title">Sender Name</div>
+        <div id="notif-body">Message preview will appear right here...</div>
+    </div>
 
-    <div class="panel left-panel"><img src="pet.gif" alt="Pixel Pet"></div>
+    <div class="panel" id="slot-1"></div>
+    <div class="panel" id="slot-2"></div>
+    <div class="panel" id="slot-3"></div>
 
-    <div class="panel middle-panel" id="dynamic-bg">
-        <div id="fallback-view">
-            <div id="clock">12:00:00</div>
-            <div id="weather-container">
-                <div id="temp-wrapper">
-                    <span id="temp-value">--</span><span id="temp-unit">&deg;C</span>
-                </div>
-                <div id="condition">Loading weather...</div>
-                <div id="extra-weather">-- ~ --&deg;C &nbsp;Feels like --&deg;C</div>
-            </div>
-        </div>
+    <div id="app-vault" style="display: none;">
         
-        <div id="lyrics-view">
-            <div id="lyrics-track"></div>
+        <div id="module-pet" class="app-module app-pet">
+            <img src="pet.gif" alt="Pixel Pet">
         </div>
-    </div>
 
-    <div class="panel right-panel">
-        <div id="spotify-empty">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.84.24 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-            <div id="spotify-empty-text">No music playing</div>
-        </div>
-        <div id="spotify-bg"></div>
-        <div id="spotify-active">
-            <img id="album-cover" src="" alt="Album Art">
-            <div id="song-info"><div id="song-title">Song Title</div><div id="song-artist">Artist Name</div></div>
-            <div id="progress-area"><div id="progress-container"><div id="progress-bar"><div id="progress-dot"></div></div></div><div id="time-info"><span id="current-time">0:00</span><span id="total-time">0:00</span></div></div>
-            <div id="controls-area">
-                <svg class="icon-btn secondary" viewBox="0 0 16 16"><path d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 0 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 4.75 13.151.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5zM8.75 10.723l.98-1.167 1.795 2.14A2.25 2.25 0 0 0 13.25 12.5h1.947l-1.017-1.018a.75.75 0 1 0 1.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 1 0-1.06-1.06L15.19 14h-1.947a3.75 3.75 0 0 1-2.873-1.34l-1.62-1.937z" fill="currentColor"/></svg>
-                <svg class="icon-btn" viewBox="0 0 16 16"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" fill="currentColor"/></svg>
-                <div id="play-pause-btn"><svg viewBox="0 0 16 16"><path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z" fill="black"/></svg></div>
-                <svg class="icon-btn" viewBox="0 0 16 16"><path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z" fill="currentColor"/></svg>
-                <svg class="icon-btn secondary" viewBox="0 0 16 16"><path d="M0 4.75A3.75 3.75 0 0 1 3.75 1h8.5A3.75 3.75 0 0 1 16 4.75v5a3.75 3.75 0 0 1-3.75 3.75H9.81l1.018 1.018a.75.75 0 1 1-1.06 1.06L6.939 12.75l2.829-2.828a.75.75 0 1 1 1.06 1.06L9.811 12h2.439a2.25 2.25 0 0 0 2.25-2.25v-5a2.25 2.25 0 0 0-2.25-2.25h-8.5A2.25 2.25 0 0 0 1.5 4.75v5A2.25 2.25 0 0 0 3.75 12H5v1.5H3.75A3.75 3.75 0 0 1 0 9.75v-5z" fill="currentColor"/></svg>
+        <div id="module-weather" class="app-module app-weather dynamic-bg-target">
+            <div id="fallback-view">
+                <div id="clock">12:00:00</div>
+                <div id="weather-container">
+                    <div id="temp-wrapper"><span id="temp-value">--</span><span id="temp-unit">&deg;C</span></div>
+                    <div id="condition">Loading weather...</div>
+                    <div id="extra-weather">-- ~ --&deg;C  Feels like --&deg;C</div>
+                </div>
+            </div>
+            <div id="lyrics-view">
+                <div id="lyrics-track"></div>
             </div>
         </div>
+
+        <div id="module-spotify" class="app-module app-spotify">
+            <div id="spotify-empty">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.84.24 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                <div id="spotify-empty-text">No music playing</div>
+            </div>
+            <div id="spotify-bg"></div>
+            <div id="spotify-active">
+                <img id="album-cover" src="" alt="Album Art">
+                <div id="song-info"><div id="song-title">Song Title</div><div id="song-artist">Artist Name</div></div>
+                <div id="progress-area"><div id="progress-container"><div id="progress-bar"><div id="progress-dot"></div></div></div><div id="time-info"><span id="current-time">0:00</span><span id="total-time">0:00</span></div></div>
+                <div id="controls-area">
+                    <svg class="icon-btn secondary" viewBox="0 0 16 16"><path d="M13.151.922a.75.75 0 1 0-1.06 1.06L13.109 3H11.16a3.75 3.75 0 0 0-2.873 1.34l-6.173 7.356A2.25 2.25 0 0 1 .39 12.5H0V14h.391a3.75 3.75 0 0 0 2.873-1.34l6.173-7.356a2.25 2.25 0 0 1 1.724-.804h1.947l-1.017 1.018a.75.75 0 0 0 1.06 1.06L15.98 4.75 13.151.922zM.391 3.5H0V2h.391c1.109 0 2.16.49 2.873 1.34L4.89 5.277l-.979 1.167-1.796-2.14A2.25 2.25 0 0 0 .39 3.5zM8.75 10.723l.98-1.167 1.795 2.14A2.25 2.25 0 0 0 13.25 12.5h1.947l-1.017-1.018a.75.75 0 1 0 1.06-1.06l2.829 2.828-2.829 2.828a.75.75 0 1 0-1.06-1.06L15.19 14h-1.947a3.75 3.75 0 0 1-2.873-1.34l-1.62-1.937z" fill="currentColor"/></svg>
+                    <svg class="icon-btn" viewBox="0 0 16 16"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" fill="currentColor"/></svg>
+                    <div id="play-pause-btn"><svg viewBox="0 0 16 16"><path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z" fill="black"/></svg></div>
+                    <svg class="icon-btn" viewBox="0 0 16 16"><path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z" fill="currentColor"/></svg>
+                    <svg class="icon-btn secondary" viewBox="0 0 16 16"><path d="M0 4.75A3.75 3.75 0 0 1 3.75 1h8.5A3.75 3.75 0 0 1 16 4.75v5a3.75 3.75 0 0 1-3.75 3.75H9.81l1.018 1.018a.75.75 0 1 1-1.06 1.06L6.939 12.75l2.829-2.828a.75.75 0 1 1 1.06 1.06L9.811 12h2.439a2.25 2.25 0 0 0 2.25-2.25v-5a2.25 2.25 0 0 0-2.25-2.25h-8.5A2.25 2.25 0 0 0 1.5 4.75v5A2.25 2.25 0 0 0 3.75 12H5v1.5H3.75A3.75 3.75 0 0 1 0 9.75v-5z" fill="currentColor"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div id="module-quotes" class="app-module app-quotes">
+            <div id="quote-text">Loading inspiration...</div>
+        </div>
+
+        <div id="module-news" class="app-module app-news">
+            <div class="news-header">Top Stories</div>
+            <div id="news-content">Loading live feed...</div>
+        </div>
+
     </div>
+  
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.min.js"></script>
 
     <script>
+        // --- WEBSOCKET RECEIVER ---
+        const socket = io();  // Automatically connects to the IP that served the page
+
+        socket.on('connect', function() {
+            console.log('🟢 Walkie-Talkie Connected!');
+        });
+
+        socket.on('server_update', function(data) {
+            console.log('📩 Message from Command Center:', data.message);
+            // In Phase B, we will use this space to instantly change the screen!
+        });
+
+        socket.on('force_layout_change', function(data) {
+            console.log(`🤖 REMOTE COMMAND: Moving ${data.app} to Slot ${data.slot}`);
+
+            // Instantly run the injection engine!
+            mountApp(data.app, data.slot);
+        });
+        
+        socket.on('refresh_pet', function() {
+            console.log('🔄 Refreshing Pet GIF...');
+            const petImg = document.querySelector('.app-pet img');
+            if(petImg) {
+                // The ?t= forces the browser to pull the new image instead of using old memory
+                petImg.src = 'pet.gif?t=' + new Date().getTime();
+            }
+        });
+
+        // NEW: Listen for a new Quote upload
+        socket.on('refresh_quotes', function() {
+            console.log('🔄 Refreshing Quotes list...');
+            fetchQuotes(); // Re-download the updated JSON file!
+        });
+
+        // NEW: The Kill Switch Listener
+        socket.on('force_reload', function() {
+            console.log('⚠️ Reboot command received. Reloading system...');
+            
+            // This is the JavaScript command that forces a hard browser refresh
+            window.location.reload(true); 
+        });
+
+        function mountApp(appName, slotNumber) {
+            const slot = document.getElementById(`slot-${slotNumber}`);
+            const appModule = document.getElementById(`module-${appName}`);
+            const vault = document.getElementById('app-vault');
+
+            if(slot && appModule) {
+                // 1. If there is already an app in this slot, send it back to the vault!
+                if (slot.children.length > 0) {
+                    vault.appendChild(slot.children[0]); 
+                }
+                // 2. Now move the requested app into the slot
+                slot.appendChild(appModule); 
+            }
+        }
+
+        // Initialize our default layout on boot!
+        mountApp('pet', 1);
+        mountApp('weather', 2);
+        mountApp('spotify', 3);
+
+
+
         let syncedProgressMs = 0;
         let lastSyncTimestamp = 0;
         let localDurationMs = 0;
@@ -206,7 +454,7 @@
                 else if(code>=95){c="Thunderstorm";i="⛈️";weatherBgImage="storm.jpg";}
                 document.getElementById('temp-value').innerText = Math.round(data.current.temperature_2m); document.getElementById('condition').innerText = `${i} ${c}`;
                 document.getElementById('extra-weather').innerHTML = `${Math.round(data.daily.temperature_2m_min[0])} ~ ${Math.round(data.daily.temperature_2m_max[0])}&deg;C &nbsp;&nbsp;Feels like ${Math.round(data.current.apparent_temperature)}&deg;C`;
-                if (!isPlayingLocal || currentLyrics.length === 0) { document.getElementById('dynamic-bg').style.backgroundImage = `url('${weatherBgImage}')`; }
+                if (!isPlayingLocal || currentLyrics.length === 0) { document.querySelector('.dynamic-bg-target').style.backgroundImage = `url('${weatherBgImage}')`; }
             } catch(e) {}
         }
         fetchWeather(); setInterval(fetchWeather, 900000); 
@@ -274,7 +522,7 @@
                 const activeUI = document.getElementById('spotify-active');
                 const emptyUI = document.getElementById('spotify-empty');
                 const spotifyBg = document.getElementById('spotify-bg');
-                const middleBg = document.getElementById('dynamic-bg');
+                const middleBg = document.querySelector('.dynamic-bg-target');
                 const fallbackView = document.getElementById('fallback-view');
                 const lyricsView = document.getElementById('lyrics-view');
 
@@ -307,6 +555,179 @@
             }
         }
         
+        // --- QUOTES ENGINE ---
+        let quotesArray = ["Stand by..."];
+        let shuffleBag = []; // The deck of cards
+        let currentQuoteIndex = -1;
+        
+        async function fetchQuotes() {
+            try {
+                const res = await fetch('/quotes.json?t=' + new Date().getTime());
+                if(res.ok) { 
+                    quotesArray = await res.json(); 
+                }
+            } catch(e) { console.log("Quotes file not found."); }
+        }
+
+        // The Fisher-Yates Shuffle Algorithm
+        // Instead of picking randomly, this engine takes all 20 quotes,
+        // shuffles them like a deck of cards, and deals them out one by one. 
+        // Once the deck is empty, it reshuffles. Zero repeats until every quote has played.
+        function fillAndShuffleBag() {
+            shuffleBag = quotesArray.map((_, index) => index); // Create an array of numbers [0, 1, 2... 19]
+            for (let i = shuffleBag.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffleBag[i], shuffleBag[j]] = [shuffleBag[j], shuffleBag[i]]; // Swap
+            }
+            
+            // Safety check: Make sure the first card of the NEW deck isn't the same as the last card of the OLD deck
+            if (shuffleBag.length > 1 && shuffleBag[0] === currentQuoteIndex) {
+                shuffleBag.push(shuffleBag.shift()); // Move it to the back of the line
+            }
+        }
+        
+        function cycleQuotes() {
+            const quoteEl = document.getElementById('quote-text');
+            if(!quoteEl) return;
+            
+            quoteEl.style.opacity = 0; // Fade out
+            
+            setTimeout(() => {
+                if(quotesArray.length > 0) {
+                    // If the deck is empty, shuffle a new one!
+                    if (shuffleBag.length === 0) {
+                        fillAndShuffleBag();
+                    }
+                    
+                    // Draw the top card from the deck
+                    currentQuoteIndex = shuffleBag.pop();
+                    
+                    // Update the text
+                    quoteEl.innerText = quotesArray[currentQuoteIndex];
+                }
+                quoteEl.style.opacity = 1; // Fade in
+            }, 2000); 
+        }
+        
+        // Start the engine
+        fetchQuotes().then(() => {
+            cycleQuotes();
+            setInterval(cycleQuotes, 12000); 
+        });
+
+
+        // --- LIVE NEWS ENGINE ---
+        let newsArticles = [];
+        let currentNewsIndex = 0;
+
+        async function fetchNews() {
+            try {
+                const res = await fetch('https://saurav.tech/NewsAPI/top-headlines/category/general/in.json');
+                const data = await res.json();
+                if (data.articles && data.articles.length > 0) {
+                    let newDeck = data.articles;
+                    
+                    // --- THE NEWS SHUFFLER ---
+                    // Shuffle the articles like a deck of cards before showing them
+                    for (let i = newDeck.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
+                    }
+                    
+                    newsArticles = newDeck;
+                    currentNewsIndex = 0; // Start at the top of the newly shuffled deck
+                }
+            } catch(e) { console.log("News feed offline."); }
+        }
+
+        function cycleNews() {
+            const newsEl = document.getElementById('news-content');
+            const newsModule = document.getElementById('module-news'); // Grab the whole container
+            if(!newsEl || newsArticles.length === 0) return;
+
+            // 1. Slide and fade out
+            newsEl.style.opacity = 0;
+            newsEl.style.transform = "translateY(-15px)";
+
+            setTimeout(() => {
+                // 2. Change the text and background while it's invisible
+                const article = newsArticles[currentNewsIndex];
+                
+                // --- NEW: DYNAMIC BACKGROUND INJECTION ---
+                if (article.urlToImage) {
+                    newsModule.style.backgroundImage = `url('${article.urlToImage}')`;
+                } else {
+                    newsModule.style.backgroundImage = 'none'; // Fallback to black if no image
+                }
+
+                // Inject the text
+                newsEl.innerHTML = `<div style="width: 100%;">
+                    <div>${article.title}</div>
+                    <div id="news-source">— ${article.source.name}</div>
+                </div>`;
+
+                // 3. Reset position to the bottom for the slide-in effect
+                newsEl.style.transition = "none"; 
+                newsEl.style.transform = "translateY(15px)";
+
+                // 4. Slide and fade in
+                setTimeout(() => {
+                    newsEl.style.transition = "all 1s cubic-bezier(0.25, 1, 0.5, 1)";
+                    newsEl.style.opacity = 1;
+                    newsEl.style.transform = "translateY(0px)";
+                }, 50); 
+
+                currentNewsIndex = (currentNewsIndex + 1) % newsArticles.length;
+            }, 1000); 
+        }
+
+        // Boot up the News Engine!
+        fetchNews().then(() => {
+            cycleNews();
+            setInterval(cycleNews, 12000); // Show each headline for 12 seconds
+            setInterval(fetchNews, 3600000); // Fetch fresh news from the internet every 1 hour
+        });
+
+        // --- LIVE PUSHBULLET NOTIFICATIONS (SECURE) ---
+        fetch('/api/get_keys')
+            .then(res => res.json())
+            .then(data => {
+                const PUSHBULLET_TOKEN = data.pb_token;
+                
+                if (PUSHBULLET_TOKEN) {
+                    const pbSocket = new WebSocket('wss://stream.pushbullet.com/websocket/' + PUSHBULLET_TOKEN);
+                    
+                    pbSocket.onopen = function() { console.log("🟢 Pushbullet Telemetry Online!"); };
+                    
+                    pbSocket.onmessage = function(event) {
+                        const packet = JSON.parse(event.data);
+                        
+                        if (packet.type === 'push' && packet.push && packet.push.type === 'mirror') {
+                            showNotification(packet.push.application_name, packet.push.title, packet.push.body);
+                        } else if (packet.type === 'push' && packet.push && packet.push.type === 'sms_changed') {
+                            if (packet.push.notifications && packet.push.notifications.length > 0) {
+                                const sms = packet.push.notifications[0];
+                                showNotification("SMS MESSAGE", sms.title, sms.body);
+                            }
+                        }
+                    };
+                }
+            });
+
+        let notifTimeout;
+        function showNotification(appName, title, body) {
+            const toast = document.getElementById('notification-toast');
+            if (!title || !body) return;
+
+            document.getElementById('notif-app').innerText = appName || "NEW MESSAGE";
+            document.getElementById('notif-title').innerText = title;
+            document.getElementById('notif-body').innerText = body;
+
+            toast.classList.add('show');
+            clearTimeout(notifTimeout);
+            notifTimeout = setTimeout(() => { toast.classList.remove('show'); }, 6000);
+        }
+
         fetchSpotify(); 
         setInterval(fetchSpotify, 3500); 
     </script>

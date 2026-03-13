@@ -1,0 +1,15 @@
+{
+  "name": "Command Center",
+  "short_name": "J2 Remote",
+  "display": "standalone",
+  "start_url": "/remote",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3050/3050525.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

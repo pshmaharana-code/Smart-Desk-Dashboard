@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#050505">
+    <title>Dashboard Remote</title>
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            overflow-x: hidden; 
+            overflow-y: auto; 
+        }
+
+        /* Abstract glowing orb in the background for aesthetic */
+        .ambient-glow {
+            position: absolute; top: -10%; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 300px; background: radial-gradient(circle, rgba(29, 185, 84, 0.15) 0%, rgba(0,0,0,0) 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        header { margin-bottom: 40px; text-align: center; }
+        h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px; }
+        p { color: #888; font-size: 0.9rem; font-weight: 400; }
+
+        .slot-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .slot-title { font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: 600; }
+
+        .button-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+        .app-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px 0;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .app-btn:active { transform: scale(0.95); background: rgba(255, 255, 255, 0.1); }
+
+        /* Active State - Glowing Green */
+        .app-btn.active {
+            background: rgba(29, 185, 84, 0.15);
+            border: 1px solid #1db954;
+            color: #1db954;
+            box-shadow: 0 0 15px rgba(29, 185, 84, 0.2);
+        }
+
+        .reboot-btn {
+            background-color: #d11124;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(209, 17, 36, 0.4);
+            transition: all 0.2s;
+        }
+        .reboot-btn:active { transform: scale(0.95); }
+
+        /* --- UPLOAD SECTION STYLES --- */
+        .vault-card {
+            background: rgba(29, 185, 84, 0.05);
+            border: 1px solid rgba(29, 185, 84, 0.2);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+        .input-group:last-child { margin-bottom: 0; }
+
+        .modern-input { 
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: #fff; padding: 14px 15px; border-radius: 12px; font-size: 0.95rem; 
+            outline: none; transition: border 0.3s; width: 100%;
+        }
+        .modern-input:focus { border-color: #1db954; background: rgba(255, 255, 255, 0.08); }
+        .modern-input::placeholder { color: #555; }
+
+        .action-btn { 
+            background: #1db954; color: #000; border: none; padding: 14px; 
+            border-radius: 12px; font-weight: 800; font-size: 0.95rem; cursor: pointer; 
+            transition: all 0.2s; 
+        }
+        .action-btn:active { transform: scale(0.95); }
+
+        /* The Custom File Upload Button Hack */
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-upload-wrapper input[type=file] { 
+            font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; 
+        }
+        .file-upload-label { 
+            background: rgba(255, 255, 255, 0.03); border: 1px dashed rgba(255, 255, 255, 0.2); 
+            color: #888; padding: 15px; border-radius: 12px; text-align: center; 
+            width: 100%; font-weight: 600; display: block; transition: all 0.3s;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <header>
+        <h1>Command Center</h1>
+        <p>J2 Multi-Dash</p>
+    </header>
+
+    <div class="slot-card">
+        <div class="slot-title">Left Display</div>
+        <div class="button-group" id="group-1">
+            <button class="app-btn active" onclick="sendCommand(1, 'pet', this)">Pet</button>
+            <button class="app-btn" onclick="sendCommand(1, 'weather', this)">Weather</button>
+            <button class="app-btn" onclick="sendCommand(1, 'spotify', this)">Spotify</button>
+            <button class="app-btn" onclick="sendCommand(1, 'quotes', this)">Quotes</button>
+            <button class="app-btn" onclick="sendCommand(1, 'news', this)">News</button> 
+        </div>
+    </div>
+
+    <div class="slot-card">
+        <div class="slot-title">Center Display</div>
+        <div class="button-group" id="group-2">
+            <button class="app-btn" onclick="sendCommand(2, 'pet', this)">Pet</button>
+            <button class="app-btn active" onclick="sendCommand(2, 'weather', this)">Weather</button>
+            <button class="app-btn" onclick="sendCommand(2, 'spotify', this)">Spotify</button>
+            <button class="app-btn" onclick="sendCommand(2, 'quotes', this)">Quotes</button>
+            <button class="app-btn" onclick="sendCommand(2, 'news', this)">News</button> 
+        </div>
+    </div>
+
+    <div class="slot-card">
+        <div class="slot-title">Right Display</div>
+        <div class="button-group" id="group-3">
+            <button class="app-btn" onclick="sendCommand(3, 'pet', this)">Pet</button>
+            <button class="app-btn" onclick="sendCommand(3, 'weather', this)">Weather</button>
+            <button class="app-btn active" onclick="sendCommand(3, 'spotify', this)">Spotify</button>
+            <button class="app-btn" onclick="sendCommand(3, 'quotes', this)">Quotes</button>
+            <button class="app-btn" onclick="sendCommand(3, 'news', this)">News</button> 
+        </div>
+    </div>
+
+    <div class="vault-card">
+        <div class="slot-title" style="color: #1db954;">Database Uploads</div>
+
+        <div class="input-group">
+            <div class="file-upload-wrapper">
+                <div class="file-upload-label" id="file-label">Tap to select a new GIF (.gif)</div>
+                <input type="file" id="gif-upload" accept="image/gif" onchange="updateFileName()">
+            </div>
+            <button class="action-btn" onclick="uploadGif()" id="gif-btn">Push to Dashboard</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="quote-input" class="modern-input" placeholder="Type your Quote here....." autocomplete="off">
+            <button class="action-btn" onclick="addQuote()" id="quote-btn">Add to Quote Engine</button>
+        </div>
+    </div>
+    
+    <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0 20px 0;">
+    <div style="text-align: center;">
+        <div class="slot-title" style="color: #d11124; margin-bottom: 5px;">System Override</div>
+        <button class="reboot-btn" onclick="forceReboot()" id="reboot-btn">Force Screen Refresh</button>
+    </div>
+    <div style="height: 40px;"></div> <script>
+        function sendCommand(slot, appName, btnElement) {
+            // 1. Visual update: remove 'active' from all buttons in this row
+            const group = document.getElementById(`group-${slot}`);
+            const buttons = group.querySelectorAll('.app-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // 2. Add 'active' to the clicked button
+            btnElement.classList.add('active');
+
+            // 3. Send the command to the Flask API!
+            fetch('/api/change_screen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json'},
+                body: JSON.stringify({ slot: slot, app_name: appName})
+            })
+            .then(response => console.log(`Command sent: ${appName} to slot ${slot}`))
+            .catch(error => console.error('Error', error));
+
+            // Note: Haptic feedback works on some Android devices to feel like a real button press!
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
+
+        // --- UPLOAD FUNCTIONS ---
+        
+        // 1. Visually update the button when a file is selected
+        function updateFileName() {
+            const input = document.getElementById('gif-upload');
+            const label = document.getElementById('file-label');
+            if(input.files && input.files[0]) {
+                label.innerText = "Selected: " + input.files[0].name;
+                label.style.color = "#fff";
+                label.style.borderColor = "#1db954";
+                label.style.background = "rgba(29, 185, 84, 0.1)";
+            }
+        }
+
+        // 2. Send the GIF to Python
+        async function uploadGif() {
+            const fileInput = document.getElementById('gif-upload');
+            const btn = document.getElementById('gif-btn');
+            
+            if(!fileInput.files[0]) {
+                alert("Please select a GIF file first!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            btn.innerText = "Pushing...";
+            
+            try {
+                const response = await fetch('/api/upload_gif', { method: 'POST', body: formData });
+                if(response.ok) {
+                    btn.innerText = "Pushed Successfully!";
+                    btn.style.background = "#fff";
+                    if (navigator.vibrate) navigator.vibrate([50, 50, 50]); // Triple buzz success!
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(() => { btn.innerText = "Push to Dashboard"; btn.style.background = "#1db954"; }, 2000);
+                }
+            } catch(e) {
+                console.error(e);
+                btn.innerText = "Upload Failed";
+            }
+        }
+
+        // 3. Send the new Quote to Python
+        async function addQuote() {
+            const input = document.getElementById('quote-input');
+            const btn = document.getElementById('quote-btn');
+            const newQuote = input.value.trim();
+
+            if(!newQuote) return;
+
+            btn.innerText = "Saving to Engine...";
+
+            try {
+                const response = await fetch('/api/add_quote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quote: newQuote })
+                });
+
+                if(response.ok) {
+                    input.value = ""; // Clear the text box
+                    btn.innerText = "Quote Locked In!";
+                    btn.style.background = "#fff";
+                    if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
+
+                    // Reset button after 2 seconds
+                    setTimeout(() => { btn.innerText = "Add to Quote Engine"; btn.style.background = "#1db954"; }, 2000);
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // --- NEW: SYSTEM OVERRIDE (KILL SWITCH) ---
+        async function forceReboot() {
+            const btn = document.getElementById('reboot-btn');
+            
+            // Ask for confirmation so you don't accidentally hit it in your pocket
+            if(!confirm("Are you sure you want to force the dashboard to reload?")) return;
+
+            btn.innerText = "Rebooting J2 Screen...";
+            
+            try {
+                await fetch('/api/reboot_screen', { method: 'POST' });
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
+                
+                setTimeout(() => { btn.innerText = "Force Screen Refresh"; }, 2000);
+            } catch(e) { 
+                console.error(e); 
+            }
+        }
+
+    </script>
+</body>
+</html>
